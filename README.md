@@ -1,3 +1,14 @@
+
+IITB CS433 PROJECT
+
+This repo is copy of the original stockfish repo found at https://github.com/official-stockfish/Stockfish, with some changes.
+
+Fork this repo to work on the project.
+Your code will be diff checked and run to check the output.
+
+Project problem statement can be found here : https://docs.google.com/document/d/1LTmCvKCD1RYyCA-N7F8tUpNDLGDc9owCL7w6F5V9VvI/edit?usp=sharing
+
+
 <div align="center">
 
   [![Stockfish][stockfish128-logo]][website-link]
