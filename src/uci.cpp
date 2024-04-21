@@ -120,10 +120,10 @@ void UCI::loop() {
         token.clear();  // Avoid a stale if getline() returns nothing or a blank line
         is >> std::skipws >> token;
 
-        if (token == "CS433")
+        if (token == "CS433" || token == "cs433")
             cs433_project(pos, states);
 
-        if (token == "quit" || token == "stop")
+        else if (token == "quit" || token == "stop")
             threads.stop = true;
 
         // The GUI sends 'ponderhit' to tell that the user has played the expected move.
@@ -199,10 +199,23 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
     //print out to sync_cout stream the FEN enconding of best board configuration with the score
 
     // We are calculating evaluations using 
-    std::stringstream ss;
-    Value v = networks.big.evaluate(pos,false);
-    v = UCI::to_cp(v,pos);
-    ss << "Final evaluation [CS433]      " << 0.01 * v<< " (white side)";
+    // std::stringstream ss;
+    // Value v = networks.big.evaluate(pos,false);
+    // v = UCI::to_cp(v,pos);
+    // ss << "Final evaluation [CS433]      " << 0.01 * v<< " (white side)";
+    
+    sync_cout<<"CS 433 project function called!" << sync_endl;
+    Value v = Eval::evaluate(networks,pos,VALUE_ZERO);
+    v = pos.side_to_move() == WHITE ? v : -v ;
+    sync_cout<<"NNUE eval is "<<0.01*UCI::to_cp(v,pos)<< "(white side)" <<sync_endl;
+    sync_cout<<"Printing legal moves now"<<sync_endl;
+    for (const auto& m : MoveList<LEGAL>(pos)){
+        states->emplace_back();
+        pos.do_move(m,states->back());
+        sync_cout<<pos<<sync_endl;
+        pos.undo_move(m);
+        states->pop_back();
+    }
     
 }
 
