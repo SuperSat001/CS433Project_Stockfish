@@ -138,6 +138,9 @@ class Position {
     // Doing and undoing moves
     void do_move(Move m, StateInfo& newSt);
     void do_move(Move m, StateInfo& newSt, bool givesCheck);
+    void do_move_433(Move m, StateInfo& newSt, bool givesCheck);
+    void do_move_433(Move m, StateInfo& newSt);
+
     void undo_move(Move m);
     void do_null_move(StateInfo& newSt, TranspositionTable& tt);
     void undo_null_move();
@@ -172,6 +175,7 @@ class Position {
 
     void put_piece(Piece pc, Square s);
     void remove_piece(Square s);
+    void move_piece(Square from, Square to);
 
    private:
     // Initialization helpers (used while setting up a position)
@@ -180,7 +184,7 @@ class Position {
     void set_check_info() const;
 
     // Other helpers
-    void move_piece(Square from, Square to);
+    // void move_piece(Square from, Square to);
     template<bool Do>
     void do_castling(Color us, Square from, Square& to, Square& rfrom, Square& rto);
     template<bool AfterMove>
@@ -357,6 +361,8 @@ inline void Position::move_piece(Square from, Square to) {
 }
 
 inline void Position::do_move(Move m, StateInfo& newSt) { do_move(m, newSt, gives_check(m)); }
+inline void Position::do_move_433(Move m, StateInfo& newSt) { do_move_433(m, newSt, gives_check(m)); }
+
 
 inline StateInfo* Position::state() const { return st; }
 
