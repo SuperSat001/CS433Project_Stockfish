@@ -205,82 +205,52 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
     //print out to sync_cout stream the FEN enconding of best board configuration with the score
 
     // We are calculating evaluations using 
-    // std::stringstream ss;
-    // Value v = networks.big.evaluate(pos,false);
-    // v = UCI::to_cp(v,pos);
-    // ss << "Final evaluation [CS433]      " << 0.01 * v<< " (white side)";
+    // custom made centipawn loss evaluation function (which uses the evaluate() function)
+
+    /*
+        Assumptions:
+        (1) Only moving White pieces to free squares
+        (2) We don't move the White King
+        (3*) Don't move white pawns since they can't do much at higher ranks without support
+    */
     
-    // sync_cout<<"CS 433 project function called!" << sync_endl;
-    // Value v = Eval::evaluate(networks,pos,VALUE_ZERO);
-    // v = pos.side_to_move() == WHITE ? v : -v ;
-    // sync_cout<<"NNUE eval is "<<0.01*UCI::to_cp(v,pos)<< "(white side)" <<sync_endl;
-    // sync_cout<<"Printing legal moves now"<<sync_endl;
-    // for (const auto& m : MoveList<LEGAL>(pos)){
-    //     states->emplace_back();
-    //     pos.do_move(m,states->back());
-    //     pos.sideToMove = ~ pos.sideToMove;
-    //     sync_cout<<pos<<sync_endl;
-    //     pos.undo_move(m);
-    //     pos.sideToMove = ~ pos.sideToMove;
-    //     states->pop_back();
-    // }
-    
-    Square free_sq [] ={
+
+    // List of free squares where pieces can move
+
+    Square free_sq[] ={
     SQ_A3, SQ_B3, SQ_C3, SQ_D3, SQ_E3, SQ_F3, SQ_G3, SQ_H3,
     SQ_A4, SQ_B4, SQ_C4, SQ_D4, SQ_E4, SQ_F4, SQ_G4, SQ_H4,
     SQ_A5, SQ_B5, SQ_C5, SQ_D5, SQ_E5, SQ_F5, SQ_G5, SQ_H5,
     SQ_A6, SQ_B6, SQ_C6, SQ_D6, SQ_E6, SQ_F6, SQ_G6, SQ_H6,
     };
-    /*
-        Assumptions:
-        (1) Only moving White pieces to free squares
-        (2) We don't move the White King
-    */
+
+    int end_sq_size = 32;
+
+
     Square start_sq[]  = {
     SQ_A1, SQ_B1, SQ_C1, SQ_D1, SQ_F1, SQ_G1, SQ_H1,
-    SQ_A2, SQ_B2, SQ_C2, SQ_D2, SQ_E2, SQ_F2, SQ_G2, SQ_H2,
+    // SQ_A2, SQ_B2, SQ_C2, SQ_D2, SQ_E2, SQ_F2, SQ_G2, SQ_H2,
     };
-    int start_sq_size = 15;
-    int end_sq_size = 32;
-    Position max_pos = Position();
+
+    int start_sq_size = 7;
+
     float max_val = 0;
-    // int counter = 0;
+    std::string best_pos;
     
     for(int sq1 = 0; sq1 < start_sq_size; sq1++){
         for(int sq2 = sq1+1; sq2 < start_sq_size; sq2++){
             for(int sq3 = sq2+1; sq3 < start_sq_size; sq3++){
                 for(int sq4 = sq3+1; sq4 < start_sq_size; sq4++){
                     // We have selected 4 starting squares to remove the pieces from
-                    // Piece pc1, pc2, pc3, pc4;
-                    // sync_cout<<"sq1= "<<sq1<<" sq2= "<<sq2<<" sq3= "<<sq3<<" sq4= "<<sq4<<sync_endl;
-                    // pc1 = pos.piece_on(start_sq[sq1]);
-                    // pc2 = pos.piece_on(start_sq[sq2]);
-                    // pc3 = pos.piece_on(start_sq[sq3]);
-                    // pc4 = pos.piece_on(start_sq[sq4]);
-                    // pos.remove_piece(start_sq[sq1]);
-                    // pos.remove_piece(start_sq[sq2]);
-                    // pos.remove_piece(start_sq[sq3]);
-                    // pos.remove_piece(start_sq[sq4]);
-                    // sync_cout<<"Removed pieces successfully!"<<sync_endl;
+
                     int end1,end2,end3,end4;
                     for( end1 = 0; end1 < end_sq_size; end1++){
                         for( end2 = end1 + 1; end2 <end_sq_size; end2++ ){
                             for( end3 = end2 + 1; end3 < end_sq_size; end3++){
                                 for( end4 = end3+1; end4 < end_sq_size; end4++){
                                     // We have selected 4 ending squares to put the piece back on
-                                    // sync_cout<<"end1= "<<end1<<" end2= "<<end2<<" end3= "<<end3<<" end4= "<<end4<<sync_endl;
-                                    // pos.put_piece(pc1, free_sq[end1]);
-                                    // pos.put_piece(pc2, free_sq[end2]);
-                                    // pos.put_piece(pc3, free_sq[end3]);
-                                    // pos.put_piece(pc4, free_sq[end4]);
-                                    // Now we find the evaluation of the position 
-                                    // float val = curr_centipawn_eval_value(pos);
-                                    // sync_cout<<pos<<" Evaluation : "<< val<<sync_endl;
-                                    // sync_cout<<val<<sync_endl;
-                                    // pos.move_piece(start_sq[sq1],free_sq[end1]);
-                                    // pos.move_piece(start_sq[sq2],free_sq[end2]);
-                                    // pos.move_piece(start_sq[sq3],free_sq[end3]);
-                                    // pos.move_piece(start_sq[sq4],free_sq[end4]);
+
+                                    // Making changes to the current position
                                     Move m1 = Move(start_sq[sq1],free_sq[end1]);
                                     states->emplace_back();
                                     pos.do_move_433(m1,states->back());
@@ -293,11 +263,16 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
                                     Move m4 = Move(start_sq[sq4],free_sq[end4]);
                                     states->emplace_back();
                                     pos.do_move_433(m4,states->back());
+
+                                    // Computing evaluation (white to play)
                                     float val = curr_centipawn_eval_value(pos);
-                                    // sync_cout<<val<<sync_endl;
+                                    
                                     if(val > max_val){
                                         max_val = val;
+                                        best_pos = pos.fen();
                                     }
+
+                                    // restoring pos variable
                                     pos.undo_move(m4);
                                     pos.undo_move(m3);
                                     pos.undo_move(m2);
@@ -306,29 +281,18 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
                                     states->pop_back();
                                     states->pop_back();
                                     states->pop_back();
-                                    // Restoring position
-                                    // pos.move_piece(free_sq[end1],start_sq[sq1]);
-                                    // pos.move_piece(free_sq[end2],start_sq[sq2]);
-                                    // pos.move_piece(free_sq[end3],start_sq[sq3]);
-                                    // pos.move_piece(free_sq[end4],start_sq[sq4]);
-                                    // counter++;
-                                    // if(counter == 100) return;
-                                    // sync_cout<<"Removed pieces successfully"<<sync_endl;
                                 }
                             }
                         }
                     }
-                    // sync_cout<<"Starting new round!"<<sync_endl;
-                    // Restoring position
-                    // pos.put_piece(pc1,start_sq[sq1]);
-                    // pos.put_piece(pc2,start_sq[sq2]);
-                    // pos.put_piece(pc3,start_sq[sq3]);
-                    // pos.put_piece(pc4,start_sq[sq4]);
                 }
             }
         }
     }
+
     sync_cout<<"The maximum evaluation (considering all possible moves) is: " << max_val<<sync_endl;
+
+    
     return;
 }
 
