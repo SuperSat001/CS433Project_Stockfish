@@ -123,7 +123,7 @@ void UCI::loop() {
         if (token == "CS433")
             cs433_project(pos, states);
 
-        if (token == "quit" || token == "stop")
+        else if (token == "quit" || token == "stop")
             threads.stop = true;
 
         // The GUI sends 'ponderhit' to tell that the user has played the expected move.
@@ -197,6 +197,12 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
     //call the neural network evaluation function and get the score for white
 
     //print out to sync_cout stream the FEN enconding of best board configuration with the score
+
+    sync_cout << "CS433 project function called!" << sync_endl;
+
+    Value v = Eval::evaluate(networks, pos, VALUE_ZERO);
+    v = pos.side_to_move() == WHITE ? v : -v;
+    sync_cout << "Final evaluation       " << 0.01 * UCI::to_cp(v, pos) << " (white side)" << sync_endl;
     
 }
 
