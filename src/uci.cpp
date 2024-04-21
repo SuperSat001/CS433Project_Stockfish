@@ -208,9 +208,6 @@ void UCI::cs433_project(Stockfish::Position& pos, std::istringstream& is, Stockf
 
     //print out to sync_cout stream the FEN enconding of best board configuration with the score
 
-    sync_cout<<"Evaluate all moves (1) or only legal moves (2)?\n"<<sync_endl;
-    sync_cout<<"Enter your choice: (1 or 2)\n"<<sync_endl;
-
     std::string token;
     is >> token;
 
@@ -318,7 +315,7 @@ void UCI::cs433_project(Stockfish::Position& pos, std::istringstream& is, Stockf
             (3) Castling not allowed
         */
 
-        sync_cout<<"Searching across 4 legal moves !\n"<<sync_endl;
+        sync_cout<<"Searching across 4 legal moves!\n"<<sync_endl;
 
         for (const auto& m1 : MoveList<LEGAL>(pos)){
             if(move_to_be_skipped(m1)) continue;
@@ -389,13 +386,20 @@ void UCI::cs433_project(Stockfish::Position& pos, std::istringstream& is, Stockf
     else{
 
         sync_cout<<"Invalid choice! Exiting...\n"<<sync_endl;
+
+        sync_cout<<"Usage: CS433 <choice>"<<sync_endl;
+        sync_cout<<"<choice> = 1 or 2"<<sync_endl;
+        sync_cout<<"1: Search across any 4 replacements"<<sync_endl;
+        sync_cout<<"2: Search across 4 replacements which are legal moves\n"<<sync_endl;
+
+
         return;
 
     }
 
     
     // Print the best evaluation found
-    sync_cout<<"Best NNUE eval is "<<max_val<< "(white side)\n" <<sync_endl;
+    sync_cout<<"Best NNUE eval is "<<max_val<< " (white side)\n" <<sync_endl;
 
     // Print the best board found
     Position best_pos;
