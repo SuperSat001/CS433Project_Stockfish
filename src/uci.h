@@ -67,7 +67,7 @@ class UCI {
     void trace_eval(Position& pos);
     void search_clear();
     void setoption(std::istringstream& is);
-    void cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &states);
+    void cs433_project(Stockfish::Position& pos, std::istringstream& is, Stockfish::StateListPtr& states);
     float curr_centipawn_eval_value(Stockfish::Position &pos);
 };
 

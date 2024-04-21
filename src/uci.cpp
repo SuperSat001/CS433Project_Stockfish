@@ -121,7 +121,7 @@ void UCI::loop() {
         is >> std::skipws >> token;
 
         if (token == "CS433" || token == "cs433")
-            cs433_project(pos, states);
+            cs433_project(pos, is, states);
 
         else if (token == "quit" || token == "stop")
             threads.stop = true;
@@ -195,8 +195,12 @@ float UCI::curr_centipawn_eval_value(Stockfish::Position &pos){
     return 0.01*curr_cp_eval;
 }
 
+bool move_to_be_skipped(const Move &m){
+    return m.to_sq() >= 48 || !(m.type_of() == NORMAL);
+}
+
 //write code here for CS433 project
-void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &states){
+void UCI::cs433_project(Stockfish::Position& pos, std::istringstream& is, Stockfish::StateListPtr& states){
 
     //compute relevant board configuration where 4 pieces are relocated, by performing a state space search over the staring board configuration
 
@@ -204,84 +208,96 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
 
     //print out to sync_cout stream the FEN enconding of best board configuration with the score
 
+    sync_cout<<"Evaluate all moves (1) or only legal moves (2)?\n"<<sync_endl;
+    sync_cout<<"Enter your choice: (1 or 2)\n"<<sync_endl;
+
+    std::string token;
+    is >> token;
+
     // We are calculating evaluations using 
     // custom made centipawn loss evaluation function (which uses the evaluate() function)
-
-    /*
-        Assumptions:
-        (1) Only moving White pieces to free squares
-        (2) We don't move the White King
-        (3*) Don't move white pawns since they can't do much at higher ranks without support
-        (4) Checks and captures are not allowed (details in report)
-    */
-    
-
-    // List of free squares where pieces can move
-
-    Square free_sq[] ={
-    SQ_A3, SQ_B3, SQ_C3, SQ_D3, SQ_E3, SQ_F3, SQ_G3, SQ_H3,
-    SQ_A4, SQ_B4, SQ_C4, SQ_D4, SQ_E4, SQ_F4, SQ_G4, SQ_H4,
-    SQ_A5, SQ_B5, SQ_C5, SQ_D5, SQ_E5, SQ_F5, SQ_G5, SQ_H5,
-    SQ_A6, SQ_B6, SQ_C6, SQ_D6, SQ_E6, SQ_F6, SQ_G6, SQ_H6,
-    };
-
-    int end_sq_size = 32;
-
-
-    Square start_sq[]  = {
-    SQ_A1, SQ_B1, SQ_C1, SQ_D1, SQ_F1, SQ_G1, SQ_H1,
-    // SQ_A2, SQ_B2, SQ_C2, SQ_D2, SQ_E2, SQ_F2, SQ_G2, SQ_H2,
-    };
-
-    int start_sq_size = 7;
+    // White to play at the end
 
     float max_val = 0;
     std::string best_fen;
-    
-    for(int sq1 = 0; sq1 < start_sq_size; sq1++){
-        for(int sq2 = sq1+1; sq2 < start_sq_size; sq2++){
-            for(int sq3 = sq2+1; sq3 < start_sq_size; sq3++){
-                for(int sq4 = sq3+1; sq4 < start_sq_size; sq4++){
-                    // We have selected 4 starting squares to remove the pieces from
 
-                    int end1,end2,end3,end4;
-                    for( end1 = 0; end1 < end_sq_size; end1++){
-                        for( end2 = end1 + 1; end2 <end_sq_size; end2++ ){
-                            for( end3 = end2 + 1; end3 < end_sq_size; end3++){
-                                for( end4 = end3+1; end4 < end_sq_size; end4++){
-                                    // We have selected 4 ending squares to put the piece back on
+    if(token == "1"){
 
-                                    // Making changes to the current position
-                                    Move m1 = Move(start_sq[sq1],free_sq[end1]);
-                                    states->emplace_back();
-                                    pos.do_move_433(m1,states->back());
-                                    Move m2 = Move(start_sq[sq2],free_sq[end2]);
-                                    states->emplace_back();
-                                    pos.do_move_433(m2,states->back());
-                                    Move m3 = Move(start_sq[sq3],free_sq[end3]);
-                                    states->emplace_back();
-                                    pos.do_move_433(m3,states->back());
-                                    Move m4 = Move(start_sq[sq4],free_sq[end4]);
-                                    states->emplace_back();
-                                    pos.do_move_433(m4,states->back());
+        /*
+            Assumptions:
+            (1) Only moving White pieces to free squares
+            (2) We don't move the White King
+            (3*) Don't move white pawns since they can't do much at higher ranks without support
+            (4) Checks and captures are not allowed (details in report)
+        */
 
-                                    // Computing evaluation (white to play)
-                                    float val = curr_centipawn_eval_value(pos);
-                                    
-                                    if(val > max_val){
-                                        max_val = val;
-                                        best_fen = pos.fen();
+       sync_cout<<"Searching across all moves!\n"<<sync_endl;
+        
+
+        // List of free squares where pieces can move
+
+        Square free_sq[] ={
+        SQ_A3, SQ_B3, SQ_C3, SQ_D3, SQ_E3, SQ_F3, SQ_G3, SQ_H3,
+        SQ_A4, SQ_B4, SQ_C4, SQ_D4, SQ_E4, SQ_F4, SQ_G4, SQ_H4,
+        SQ_A5, SQ_B5, SQ_C5, SQ_D5, SQ_E5, SQ_F5, SQ_G5, SQ_H5,
+        SQ_A6, SQ_B6, SQ_C6, SQ_D6, SQ_E6, SQ_F6, SQ_G6, SQ_H6,
+        };
+
+        int end_sq_size = 32;
+
+
+        Square start_sq[]  = {
+        SQ_A1, SQ_B1, SQ_C1, SQ_D1, SQ_F1, SQ_G1, SQ_H1,
+        // SQ_A2, SQ_B2, SQ_C2, SQ_D2, SQ_E2, SQ_F2, SQ_G2, SQ_H2,
+        };
+
+        int start_sq_size = 7;
+        
+        for(int sq1 = 0; sq1 < start_sq_size; sq1++){
+            for(int sq2 = sq1+1; sq2 < start_sq_size; sq2++){
+                for(int sq3 = sq2+1; sq3 < start_sq_size; sq3++){
+                    for(int sq4 = sq3+1; sq4 < start_sq_size; sq4++){
+                        // We have selected 4 starting squares to remove the pieces from
+
+                        int end1,end2,end3,end4;
+                        for( end1 = 0; end1 < end_sq_size; end1++){
+                            for( end2 = end1 + 1; end2 <end_sq_size; end2++ ){
+                                for( end3 = end2 + 1; end3 < end_sq_size; end3++){
+                                    for( end4 = end3+1; end4 < end_sq_size; end4++){
+                                        // We have selected 4 ending squares to put the piece back on
+
+                                        // Making changes to the current position
+                                        Move m1 = Move(start_sq[sq1],free_sq[end1]);
+                                        states->emplace_back();
+                                        pos.do_move_433(m1,states->back());
+                                        Move m2 = Move(start_sq[sq2],free_sq[end2]);
+                                        states->emplace_back();
+                                        pos.do_move_433(m2,states->back());
+                                        Move m3 = Move(start_sq[sq3],free_sq[end3]);
+                                        states->emplace_back();
+                                        pos.do_move_433(m3,states->back());
+                                        Move m4 = Move(start_sq[sq4],free_sq[end4]);
+                                        states->emplace_back();
+                                        pos.do_move_433(m4,states->back());
+
+                                        // Computing evaluation (white to play)
+                                        float val = curr_centipawn_eval_value(pos);
+                                        
+                                        if(val > max_val){
+                                            max_val = val;
+                                            best_fen = pos.fen();
+                                        }
+
+                                        // restoring pos variable
+                                        pos.undo_move(m4);
+                                        pos.undo_move(m3);
+                                        pos.undo_move(m2);
+                                        pos.undo_move(m1);
+                                        states->pop_back();
+                                        states->pop_back();
+                                        states->pop_back();
+                                        states->pop_back();
                                     }
-
-                                    // restoring pos variable
-                                    pos.undo_move(m4);
-                                    pos.undo_move(m3);
-                                    pos.undo_move(m2);
-                                    pos.undo_move(m1);
-                                    states->pop_back();
-                                    states->pop_back();
-                                    states->pop_back();
-                                    states->pop_back();
                                 }
                             }
                         }
@@ -289,6 +305,92 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
                 }
             }
         }
+
+    
+    }
+    else if(token == "2"){
+
+        float curr_cp_eval;
+        /*
+            Assumptions:
+            (1) Only moving White pieces (giving white 4 extra moves at the start)
+            (2) Captures at g or h rank are not allowed (details in report)
+            (3) Castling not allowed
+        */
+
+        sync_cout<<"Searching across 4 legal moves !\n"<<sync_endl;
+
+        for (const auto& m1 : MoveList<LEGAL>(pos)){
+            if(move_to_be_skipped(m1)) continue;
+
+            states->emplace_back();
+
+            // sync_cout<<"First Move:"<<sync_endl;
+            pos.do_move(m1, states->back());
+            pos.sideToMove = ~ pos.sideToMove;
+
+            for (const auto& m2 : MoveList<LEGAL>(pos)){
+                if(move_to_be_skipped(m2)) continue;
+
+                states->emplace_back();
+
+                // sync_cout<<"Second Move:"<<sync_endl;
+                pos.do_move(m2, states->back());
+                pos.sideToMove = ~ pos.sideToMove;
+
+
+                for (const auto& m3 : MoveList<LEGAL>(pos)){
+                    if(move_to_be_skipped(m3)) continue;
+
+                    states->emplace_back();
+
+                    // sync_cout<<"Third Move:"<<sync_endl;
+                    pos.do_move(m3, states->back());
+                    pos.sideToMove = ~ pos.sideToMove;
+        
+
+                    for (const auto& m4 : MoveList<LEGAL>(pos)){
+                        if(move_to_be_skipped(m4)) continue;
+
+                        states->emplace_back();
+        
+                        // sync_cout<<"Fourth Move:"<<sync_endl;
+                        
+                        pos.do_move(m4, states->back());
+                        pos.sideToMove = ~ pos.sideToMove;
+        
+                        // Calculate the current NNUE eval
+                        curr_cp_eval = UCI::curr_centipawn_eval_value(pos);
+                        
+                        // If the current eval is better than the best eval so far, update the best eval and the best FEN
+                        if(curr_cp_eval > max_val){
+                            max_val = curr_cp_eval;
+                            best_fen = pos.fen();
+                        }
+
+                        pos.undo_move(m4);
+                        pos.sideToMove = ~ pos.sideToMove;
+                        states->pop_back();
+                    }
+                    pos.undo_move(m3);
+                    pos.sideToMove = ~ pos.sideToMove;
+                    states->pop_back();
+                }
+                pos.undo_move(m2);
+                pos.sideToMove = ~ pos.sideToMove;
+                states->pop_back();
+            }
+
+            pos.undo_move(m1);
+            pos.sideToMove = ~ pos.sideToMove;
+            states->pop_back();
+        }
+    }
+    else{
+
+        sync_cout<<"Invalid choice! Exiting...\n"<<sync_endl;
+        return;
+
     }
 
     
@@ -300,7 +402,6 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
     best_pos.set(best_fen, options["UCI_Chess960"], pos.state());
     sync_cout<<best_pos<<sync_endl;
 
-    
     return;
 }
 
