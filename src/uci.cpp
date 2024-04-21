@@ -197,6 +197,12 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
     //call the neural network evaluation function and get the score for white
 
     //print out to sync_cout stream the FEN enconding of best board configuration with the score
+
+    // We are calculating evaluations using 
+    std::stringstream ss;
+    Value v = networks.big.evaluate(pos,false);
+    v = UCI::to_cp(v,pos);
+    ss << "Final evaluation [CS433]      " << 0.01 * v<< " (white side)";
     
 }
 
