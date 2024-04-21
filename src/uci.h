@@ -68,6 +68,7 @@ class UCI {
     void search_clear();
     void setoption(std::istringstream& is);
     void cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &states);
+    float curr_centipawn_eval_value(Stockfish::Position &pos);
 };
 
 }  // namespace Stockfish

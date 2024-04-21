@@ -189,6 +189,12 @@ void UCI::loop() {
     } while (token != "quit" && cli.argc == 1);  // The command-line arguments are one-shot
 }
 
+float UCI::curr_centipawn_eval_value(Stockfish::Position &pos){
+    Value v = Eval::evaluate(networks,pos,VALUE_ZERO);
+    int curr_cp_eval = UCI::to_cp(v,pos);
+    return 0.01*curr_cp_eval;
+}
+
 //write code here for CS433 project
 void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &states){
 
@@ -237,15 +243,16 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
     int start_sq_size = 15;
     int end_sq_size = 32;
     Position max_pos = Position();
-    Value max_val = VALUE_ZERO;
+    float max_val = 0;
+    int counter = 0;
+    
     for(int sq1 = 0; sq1 < start_sq_size; sq1++){
         for(int sq2 = sq1+1; sq2 < start_sq_size; sq2++){
             for(int sq3 = sq2+1; sq3 < start_sq_size; sq3++){
                 for(int sq4 = sq3+1; sq4 < start_sq_size; sq4++){
                     // We have selected 4 starting squares to remove the pieces from
-                    sync_cout<<"Starting round!"<<sync_endl;
                     Piece pc1, pc2, pc3, pc4;
-                    sync_cout<<"sq1= "<<sq1<<" sq2= "<<sq2<<" sq3= "<<sq3<<" sq4= "<<sq4<<sync_endl;
+                    // sync_cout<<"sq1= "<<sq1<<" sq2= "<<sq2<<" sq3= "<<sq3<<" sq4= "<<sq4<<sync_endl;
                     pc1 = pos.piece_on(start_sq[sq1]);
                     pc2 = pos.piece_on(start_sq[sq2]);
                     pc3 = pos.piece_on(start_sq[sq3]);
@@ -254,7 +261,7 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
                     pos.remove_piece(start_sq[sq2]);
                     pos.remove_piece(start_sq[sq3]);
                     pos.remove_piece(start_sq[sq4]);
-                    sync_cout<<"Removed pieces successfully!"<<sync_endl;
+                    // sync_cout<<"Removed pieces successfully!"<<sync_endl;
                     int end1,end2,end3,end4;
                     for( end1 = 0; end1 < end_sq_size; end1++){
                         for( end2 = end1 + 1; end2 <end_sq_size; end2++ ){
@@ -267,28 +274,24 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
                                     pos.put_piece(pc3, free_sq[end3]);
                                     pos.put_piece(pc4, free_sq[end4]);
                                     // Now we find the evaluation of the position 
-                                    Value v = Eval::evaluate(networks, pos, VALUE_ZERO);
-                                    v = pos.side_to_move() == WHITE ? v : -v;
-                                    v = UCI::to_cp(v,pos);
-                                    // if(v > 100){
-                                    //     sync_cout<<"Uh oh"<<sync_endl;
-                                    // }
-                                    if(v > max_val){
-                                        // max_pos = pos;
-                                        max_val = v;
+                                    float val = curr_centipawn_eval_value(pos);
+                                    sync_cout<<pos<<" Evaluation : "<< val<<sync_endl;
+                                    if(val > max_val){
+                                        max_val = val;
                                     }
-                                    // sync_cout<<pos<< "valuation - " << v<<sync_endl;
                                     // Restoring position
                                     pos.remove_piece(free_sq[end1]);
                                     pos.remove_piece(free_sq[end2]);
                                     pos.remove_piece(free_sq[end3]);
                                     pos.remove_piece(free_sq[end4]);
+                                    counter++;
+                                    if(counter == 100) return;
                                     // sync_cout<<"Removed pieces successfully"<<sync_endl;
                                 }
                             }
                         }
                     }
-                    sync_cout<<"Starting new round!"<<sync_endl;
+                    // sync_cout<<"Starting new round!"<<sync_endl;
                     // Restoring position
                     pos.put_piece(pc1,start_sq[sq1]);
                     pos.put_piece(pc2,start_sq[sq2]);
