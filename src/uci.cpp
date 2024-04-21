@@ -212,8 +212,10 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
     for (const auto& m : MoveList<LEGAL>(pos)){
         states->emplace_back();
         pos.do_move(m,states->back());
+        pos.sideToMove = ~ pos.sideToMove;
         sync_cout<<pos<<sync_endl;
         pos.undo_move(m);
+        pos.sideToMove = ~ pos.sideToMove;
         states->pop_back();
     }
     

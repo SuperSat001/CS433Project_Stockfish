@@ -165,6 +165,7 @@ class Position {
     // Position consistency check, for debugging
     bool pos_is_ok() const;
     void flip();
+    Color      sideToMove;
 
     // Used by NNUE
     StateInfo* state() const;
@@ -195,7 +196,7 @@ class Position {
     Bitboard   castlingPath[CASTLING_RIGHT_NB];
     StateInfo* st;
     int        gamePly;
-    Color      sideToMove;
+    // Color      sideToMove;
     bool       chess960;
 };
 
