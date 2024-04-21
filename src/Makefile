@@ -132,7 +132,7 @@ else
 endif
 
 optimize = yes
-debug = no
+debug = yes
 sanitize = none
 bits = 64
 prefetch = no

@@ -205,16 +205,78 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
     // ss << "Final evaluation [CS433]      " << 0.01 * v<< " (white side)";
     
     sync_cout<<"CS 433 project function called!" << sync_endl;
-    Value v = Eval::evaluate(networks,pos,VALUE_ZERO);
+
+
+    Value v;
+    v = Eval::evaluate(networks,pos,VALUE_ZERO);
     v = pos.side_to_move() == WHITE ? v : -v ;
     sync_cout<<"NNUE eval is "<<0.01*UCI::to_cp(v,pos)<< "(white side)" <<sync_endl;
+
     sync_cout<<"Printing legal moves now"<<sync_endl;
-    for (const auto& m : MoveList<LEGAL>(pos)){
+    for (const auto& m1 : MoveList<LEGAL>(pos)){
+        if(m1.to_sq() >= 48 || !(m1.type_of() == NORMAL)) continue;
+
         states->emplace_back();
-        pos.do_move(m,states->back());
+
+        sync_cout<<"First Move:"<<sync_endl;
+        pos.do_move(m1 ,states->back());
         pos.sideToMove = ~ pos.sideToMove;
+
         sync_cout<<pos<<sync_endl;
-        pos.undo_move(m);
+
+        for (const auto& m2 : MoveList<LEGAL>(pos)){
+            if(m2.to_sq() >= 48 || !(m2.type_of() == NORMAL)) continue;
+
+            states->emplace_back();
+
+            sync_cout<<"Second Move:"<<sync_endl;
+            pos.do_move(m2 ,states->back());
+            pos.sideToMove = ~ pos.sideToMove;
+
+
+            for (const auto& m3 : MoveList<LEGAL>(pos)){
+                if(m3.to_sq() >= 48 || !(m3.type_of() == NORMAL)) continue;
+
+                states->emplace_back();
+
+                sync_cout<<"Third Move:"<<sync_endl;
+                pos.do_move(m3 ,states->back());
+                pos.sideToMove = ~ pos.sideToMove;
+    
+
+                for (const auto& m4 : MoveList<LEGAL>(pos)){
+                    if(m4.to_sq() >= 48 || !(m4.type_of() == NORMAL)) continue;
+
+                    states->emplace_back();
+    
+                    sync_cout<<"Fourth Move:"<<sync_endl;
+
+                    sync_cout<<m4.to_sq()<<sync_endl;
+                    
+                    pos.do_move(m4 ,states->back());
+                    pos.sideToMove = ~ pos.sideToMove;
+    
+                    sync_cout<<pos<<sync_endl;
+
+                    v = Eval::evaluate(networks,pos,VALUE_ZERO);
+                    v = pos.side_to_move() == WHITE ? v : -v ;
+                    sync_cout<<"New NNUE eval is "<<0.01*UCI::to_cp(v,pos)<< "(white side)" <<sync_endl;
+                    sync_cout<<pos.fen()<<sync_endl;
+
+                    pos.undo_move(m4);
+                    pos.sideToMove = ~ pos.sideToMove;
+                    states->pop_back();
+                }
+                pos.undo_move(m3);
+                pos.sideToMove = ~ pos.sideToMove;
+                states->pop_back();
+            }
+            pos.undo_move(m2);
+            pos.sideToMove = ~ pos.sideToMove;
+            states->pop_back();
+        }
+
+        pos.undo_move(m1);
         pos.sideToMove = ~ pos.sideToMove;
         states->pop_back();
     }

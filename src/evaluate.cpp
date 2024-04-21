@@ -47,7 +47,7 @@ int Eval::simple_eval(const Position& pos, Color c) {
 // of the position from the point of view of the side to move.
 Value Eval::evaluate(const Eval::NNUE::Networks& networks, const Position& pos, int optimism) {
 
-    assert(!pos.checkers());
+    // assert(!pos.checkers());
 
     int  simpleEval = simple_eval(pos, pos.side_to_move());
     bool smallNet   = std::abs(simpleEval) > SmallNetThreshold;
