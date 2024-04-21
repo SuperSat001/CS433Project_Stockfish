@@ -212,6 +212,7 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
         (1) Only moving White pieces to free squares
         (2) We don't move the White King
         (3*) Don't move white pawns since they can't do much at higher ranks without support
+        (4) Checks and captures are not allowed (details in report)
     */
     
 
@@ -235,7 +236,7 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
     int start_sq_size = 7;
 
     float max_val = 0;
-    std::string best_pos;
+    std::string best_fen;
     
     for(int sq1 = 0; sq1 < start_sq_size; sq1++){
         for(int sq2 = sq1+1; sq2 < start_sq_size; sq2++){
@@ -269,7 +270,7 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
                                     
                                     if(val > max_val){
                                         max_val = val;
-                                        best_pos = pos.fen();
+                                        best_fen = pos.fen();
                                     }
 
                                     // restoring pos variable
@@ -290,7 +291,14 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
         }
     }
 
-    sync_cout<<"The maximum evaluation (considering all possible moves) is: " << max_val<<sync_endl;
+    
+    // Print the best evaluation found
+    sync_cout<<"Best NNUE eval is "<<max_val<< "(white side)\n" <<sync_endl;
+
+    // Print the best board found
+    Position best_pos;
+    best_pos.set(best_fen, options["UCI_Chess960"], pos.state());
+    sync_cout<<best_pos<<sync_endl;
 
     
     return;
