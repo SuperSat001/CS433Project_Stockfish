@@ -189,79 +189,77 @@ void UCI::loop() {
     } while (token != "quit" && cli.argc == 1);  // The command-line arguments are one-shot
 }
 
+float UCI::curr_centipawn_eval_value(Stockfish::Position &pos){
+    Value v = Eval::evaluate(networks,pos,VALUE_ZERO);
+    int curr_cp_eval = UCI::to_cp(v,pos);
+    return 0.01*curr_cp_eval;
+}
+
+bool move_to_be_skipped(const Move &m){
+    return m.to_sq() >= 48 || !(m.type_of() == NORMAL);
+}
+
 //write code here for CS433 project
 void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &states){
 
     //compute relevant board configuration where 4 pieces are relocated, by performing a state space search over the staring board configuration
-
-    //call the neural network evaluation function and get the score for white
-
-    //print out to sync_cout stream the FEN enconding of best board configuration with the score
-
-    // We are calculating evaluations using 
-    // std::stringstream ss;
-    // Value v = networks.big.evaluate(pos,false);
-    // v = UCI::to_cp(v,pos);
-    // ss << "Final evaluation [CS433]      " << 0.01 * v<< " (white side)";
     
-    sync_cout<<"CS 433 project function called!" << sync_endl;
+    sync_cout<<"\nCS 433 project function called!\n" << sync_endl;
 
+    float curr_cp_eval, best_cp = 0;
+    std::string best_fen;
+   
+    curr_cp_eval = UCI::curr_centipawn_eval_value(pos);
+    sync_cout<<"Initial NNUE eval is "<<curr_cp_eval<< "(white side)\n" <<sync_endl;
 
-    Value v;
-    v = Eval::evaluate(networks,pos,VALUE_ZERO);
-    v = pos.side_to_move() == WHITE ? v : -v ;
-    sync_cout<<"NNUE eval is "<<0.01*UCI::to_cp(v,pos)<< "(white side)" <<sync_endl;
-
-    sync_cout<<"Printing legal moves now"<<sync_endl;
+    sync_cout<<"Searching across 4 legal moves now!\n"<<sync_endl;
     for (const auto& m1 : MoveList<LEGAL>(pos)){
-        if(m1.to_sq() >= 48 || !(m1.type_of() == NORMAL)) continue;
+        if(move_to_be_skipped(m1)) continue;
 
         states->emplace_back();
 
-        sync_cout<<"First Move:"<<sync_endl;
-        pos.do_move(m1 ,states->back());
+        // sync_cout<<"First Move:"<<sync_endl;
+        pos.do_move(m1, states->back());
         pos.sideToMove = ~ pos.sideToMove;
 
-        sync_cout<<pos<<sync_endl;
-
         for (const auto& m2 : MoveList<LEGAL>(pos)){
-            if(m2.to_sq() >= 48 || !(m2.type_of() == NORMAL)) continue;
+            if(move_to_be_skipped(m2)) continue;
 
             states->emplace_back();
 
-            sync_cout<<"Second Move:"<<sync_endl;
-            pos.do_move(m2 ,states->back());
+            // sync_cout<<"Second Move:"<<sync_endl;
+            pos.do_move(m2, states->back());
             pos.sideToMove = ~ pos.sideToMove;
 
 
             for (const auto& m3 : MoveList<LEGAL>(pos)){
-                if(m3.to_sq() >= 48 || !(m3.type_of() == NORMAL)) continue;
+                if(move_to_be_skipped(m3)) continue;
 
                 states->emplace_back();
 
-                sync_cout<<"Third Move:"<<sync_endl;
-                pos.do_move(m3 ,states->back());
+                // sync_cout<<"Third Move:"<<sync_endl;
+                pos.do_move(m3, states->back());
                 pos.sideToMove = ~ pos.sideToMove;
     
 
                 for (const auto& m4 : MoveList<LEGAL>(pos)){
-                    if(m4.to_sq() >= 48 || !(m4.type_of() == NORMAL)) continue;
+                    if(move_to_be_skipped(m4)) continue;
 
                     states->emplace_back();
     
-                    sync_cout<<"Fourth Move:"<<sync_endl;
-
-                    sync_cout<<m4.to_sq()<<sync_endl;
+                    // sync_cout<<"Fourth Move:"<<sync_endl;
                     
-                    pos.do_move(m4 ,states->back());
+                    pos.do_move(m4, states->back());
                     pos.sideToMove = ~ pos.sideToMove;
     
-                    sync_cout<<pos<<sync_endl;
-
-                    v = Eval::evaluate(networks,pos,VALUE_ZERO);
-                    v = pos.side_to_move() == WHITE ? v : -v ;
-                    sync_cout<<"New NNUE eval is "<<0.01*UCI::to_cp(v,pos)<< "(white side)" <<sync_endl;
-                    sync_cout<<pos.fen()<<sync_endl;
+                    // Calculate the current NNUE eval
+                    curr_cp_eval = UCI::curr_centipawn_eval_value(pos);
+                    
+                    // If the current eval is better than the best eval so far, update the best eval and the best FEN
+                    if(curr_cp_eval > best_cp){
+                        best_cp = curr_cp_eval;
+                        best_fen = pos.fen();
+                    }
 
                     pos.undo_move(m4);
                     pos.sideToMove = ~ pos.sideToMove;
@@ -280,6 +278,14 @@ void UCI::cs433_project(Stockfish::Position &pos, Stockfish::StateListPtr &state
         pos.sideToMove = ~ pos.sideToMove;
         states->pop_back();
     }
+
+    // Print the best evaluation found
+    sync_cout<<"Best NNUE eval is "<<best_cp<< "(white side)\n" <<sync_endl;
+
+    // Print the best board found
+    Position best_pos;
+    best_pos.set(best_fen, options["UCI_Chess960"], pos.state());
+    sync_cout<<best_pos<<sync_endl;
     
 }
 
